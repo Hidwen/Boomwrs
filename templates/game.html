@@ -1,0 +1,169 @@
+{% extends "base.html" %}
+
+{% block body_class %}page{% endblock %}
+
+{% block content %}
+<a href="/forfeit" class="nav-btn-back">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
+    <span>Forfeit</span>
+</a>
+
+<div class="backdrop" aria-hidden="true">
+    <div class="glow glow-left"></div>
+    <div class="glow glow-right"></div>
+    <span class="float-tile ft-b">B</span>
+    <span class="float-tile ft-m">M</span>
+    <span class="float-tile ft-o">O</span>
+    <span class="float-tile ft-s">S</span>
+    <span class="float-tile ft-r">R</span>
+</div>
+
+<div class="stage" style="padding-top: 50px;">
+
+    <div class="top-bar">
+        <span class="title">BOOMWRS</span>
+        <span style="font-weight: 700; color: var(--cream);">{{ username }}</span>
+    </div>
+
+    <div class="message" style="color: var(--yellow);">
+        {% if game.message %}
+            {{ game.message }}
+        {% endif %}
+    </div>
+
+    <!-- Word length css variable -->
+    <div id="board" style="--word-length: {{ word_length }};">
+        {% for row_index in range(6) %}
+            {% set is_active = row_index == game.guesses|length %}
+            {% set is_new_row = (row_index == game.guesses|length - 1) and game.new_row %}
+            
+            <div class="row {% if is_active %}active-row{% endif %} {% if is_active and game.message == 'No such word is present' %}shake{% endif %}">
+                {% if row_index < game.guesses|length %}
+                    <!-- Played row -->
+                    {% set guess, scores = scored_guesses[row_index] %}
+                    {% for col_index in range(word_length) %}
+                        {% set score = scores[col_index] %}
+                        {% set color_hex = '#2fa866' if score == 'green' else ('#f4a62a' if score == 'orange' else '#ffffff') %}
+                        <span class="tile {% if is_new_row %}flip{% else %}{{ score }}{% endif %}" 
+                              style="{% if is_new_row %}--final-color: {{ color_hex }};{% endif %}">
+                            {{ guess[col_index] }}
+                        </span>
+                    {% endfor %}
+                {% elif is_active and game.status == 'playing' %}
+                    <!-- Current row -->
+                    {% for col_index in range(word_length) %}
+                        <span class="tile empty"></span>
+                    {% endfor %}
+                {% else %}
+                    <!-- Empty row -->
+                    {% for col_index in range(word_length) %}
+                        <span class="tile empty"></span>
+                    {% endfor %}
+                {% endif %}
+            </div>
+        {% endfor %}
+    </div>
+
+    {% if game.status == 'playing' %}
+        <div id="keyboard">
+            {% for row in ['qwertyuiop', 'asdfghjkl'] %}
+                <div class="kb-row">
+                    {% for letter in row %}
+                        <button class="key {{ kb_colors.get(letter, 'unused') }}" value="{{ letter }}">{{ letter }}</button>
+                    {% endfor %}
+                </div>
+            {% endfor %}
+            <div class="kb-row">
+                <button class="key enter" value="enter">ENTER</button>
+                {% for letter in 'zxcvbnm' %}
+                    <button class="key {{ kb_colors.get(letter, 'unused') }}" value="{{ letter }}">{{ letter }}</button>
+                {% endfor %}
+                <button class="key delete" value="delete">DEL</button>
+            </div>
+        </div>
+
+        <!-- Hidden form for word submission -->
+        <form id="guess-form" action="/guess" method="POST" style="display: none;">
+            <input type="hidden" name="word" id="hidden-guess">
+        </form>
+
+        <script>
+            const wordLength = {{ word_length }};
+            let draft = "";
+            const activeRow = document.querySelector('.active-row');
+            const tiles = activeRow ? activeRow.querySelectorAll('.tile') : [];
+
+            function updateTiles() {
+                if (!activeRow) return;
+                for (let i = 0; i < wordLength; i++) {
+                    if (i < draft.length) {
+                        tiles[i].textContent = draft[i];
+                        tiles[i].className = 'tile draft';
+                    } else {
+                        tiles[i].textContent = "";
+                        tiles[i].className = 'tile empty';
+                    }
+                }
+            }
+
+            function handleInput(key) {
+                if (key === 'enter') {
+                    if (draft.length === wordLength) {
+                        document.getElementById('hidden-guess').value = draft;
+                        document.getElementById('guess-form').submit();
+                    }
+                } else if (key === 'backspace' || key === 'delete') {
+                    if (draft.length > 0) {
+                        draft = draft.slice(0, -1);
+                        updateTiles();
+                    }
+                } else if (/^[a-z]$/.test(key)) {
+                    if (draft.length < wordLength) {
+                        draft += key;
+                        updateTiles();
+                    }
+                }
+            }
+
+            document.addEventListener('keydown', (e) => {
+                if (e.ctrlKey || e.altKey || e.metaKey) return;
+                const key = e.key.toLowerCase();
+                if (key === 'enter') handleInput('enter');
+                else if (key === 'backspace') handleInput('backspace');
+                else if (/^[a-z]$/.test(key)) handleInput(key);
+            });
+
+            document.querySelectorAll('.key').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    handleInput(btn.value.toLowerCase());
+                    btn.blur();
+                });
+            });
+        </script>
+    {% else %}
+        <div id="end-screen" style="text-align: center; margin-top: 20px;">
+            {% if game.status == 'lost' %}
+                <h2 style="font-family: var(--font-logo); color: var(--yellow);">The word was: {{ game.answer|upper }}</h2>
+            {% else %}
+                <h2 style="font-family: var(--font-logo); color: var(--green);">You Won!</h2>
+            {% endif %}
+            <div style="display: flex; gap: 12px; justify-content: center; margin-top: 15px;">
+                <form action="/play" method="GET">
+                    <button type="submit" class="gradient-btn" style="min-width: 140px; height: 44px; font-size: 15px;">Play Again</button>
+                </form>
+                <form action="/travel" method="GET">
+                    <button type="submit" class="gradient-btn" style="min-width: 140px; height: 44px; font-size: 15px; background: linear-gradient(135deg, var(--green), var(--sea-blue));">Travel Hub</button>
+                </form>
+            </div>
+        </div>
+    {% endif %}
+
+</div>
+
+{% if confetti %}
+    {% for piece in confetti %}
+        <div class="confetti" style="left: {{ piece.left }}; animation-delay: {{ piece.delay }}; animation-duration: {{ piece.duration }}; width: {{ piece.size }}; height: {{ piece.size }}; background-color: {{ piece.color }}; transform: rotate({{ piece.rotation }});"></div>
+    {% endfor %}
+{% endif %}
+
+{% endblock %}

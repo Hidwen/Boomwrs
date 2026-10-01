@@ -1,0 +1,584 @@
+{% extends "base.html" %}
+
+{% block body_class %}page{% endblock %}
+
+{% block content %}
+<a href="/travel" onclick="leaveParty(event)" class="nav-btn-back">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
+    <span>Travel Hub</span>
+</a>
+
+<div id="toast-banner" class="toast-banner"></div>
+
+<div class="backdrop" aria-hidden="true">
+    <div class="glow glow-left"></div>
+    <div class="glow glow-right"></div>
+    <span class="float-tile ft-b">B</span>
+    <span class="float-tile ft-m">M</span>
+    <span class="float-tile ft-o">O</span>
+    <span class="float-tile ft-s">S</span>
+    <span class="float-tile ft-r">R</span>
+</div>
+
+<div class="stage" style="padding-top: 65px;">
+
+    <!-- Lobby View -->
+    <div id="lobby-view" style="width: min(720px, 100%);">
+        <h1 class="travel-title" style="margin-bottom: 4px;">Party Room</h1>
+        <p class="travel-subtitle" style="margin-bottom: 20px;">Share code or QR with friends to join match</p>
+
+        <!-- Notebook Roster -->
+        <div class="notebook-container">
+            <div class="notebook-header">
+                <div style="text-align: left; display: flex; align-items: center; gap: 12px;">
+                    <div>
+                        <span style="font-size: 11px; color: var(--text-muted); display: block; font-weight: 700;">JOIN CODE</span>
+                        <span class="notebook-code" id="party-code-display">------</span>
+                    </div>
+                    <button onclick="openQRModal()" style="background: rgba(0,180,216,0.15); border: 1.5px solid var(--sea-blue); color: var(--sea-blue); padding: 6px 12px; border-radius: 10px; font-size: 13px; font-weight: 700; cursor: pointer; margin-top: 14px;">
+                        QR Code
+                    </button>
+                </div>
+                <div style="text-align: right;">
+                    <span style="font-size: 11px; color: var(--text-muted); display: block; font-weight: 700;">SETTINGS</span>
+                    <span id="rounds-display" style="font-family: var(--font-logo); font-size: 16px; color: var(--sea-blue);">5 Rounds (60s)</span>
+                </div>
+            </div>
+            <div class="notebook-paper">
+                <div style="font-size: 13px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 10px; text-align: left;">
+                    Joined Players (<span id="player-count">0</span>)
+                </div>
+                <div id="players-list">
+                    <!-- Populated via JS -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Controls -->
+        <div style="display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; margin-bottom: 18px;">
+            <button id="start-btn" onclick="startPartyGame()" class="gradient-btn" style="display: none; min-width: 160px; height: 46px; font-size: 16px;">
+                Start Match
+            </button>
+            <button id="settings-btn" onclick="openSettingsModal()" class="gradient-btn" style="display: none; min-width: 140px; height: 46px; font-size: 15px; background: linear-gradient(135deg, var(--yellow), var(--orange));">
+                Settings
+            </button>
+            <button id="disband-btn" onclick="disbandParty()" class="gradient-btn danger-btn" style="display: none; min-width: 140px; height: 46px; font-size: 15px;">
+                Disband Party
+            </button>
+            <button id="leave-btn" onclick="leaveParty(event)" class="gradient-btn danger-btn" style="min-width: 140px; height: 46px; font-size: 15px;">
+                Leave Party
+            </button>
+        </div>
+
+        <!-- Chat Section -->
+        <div class="chat-container">
+            <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--slot-line); padding-bottom: 8px;">
+                <span style="font-family: var(--font-logo); color: var(--sea-blue); font-size: 16px;">Party Chat</span>
+                <span id="mute-status" style="font-size: 11px; font-weight: 700; color: var(--text-muted);"></span>
+            </div>
+            <div class="chat-messages" id="chat-messages"></div>
+            <form onsubmit="sendChatMessage(event)" class="chat-input-wrap">
+                <input type="text" id="chat-input" class="chat-input" placeholder="Type a message (max 100 letters)..." maxlength="100" autocomplete="off">
+                <button type="submit" class="chat-send-btn">Send</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Active Party Game View -->
+    <div id="game-view" style="display: none; width: min(500px, 100%);">
+        <div class="top-bar">
+            <button onclick="openPartyForfeitModal()" style="background: rgba(255,107,94,0.15); border: 1px solid var(--danger); color: var(--danger); padding: 4px 10px; border-radius: 8px; font-weight: 700; font-size: 12px; cursor: pointer; display: flex; align-items: center; gap: 4px;">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
+                Forfeit
+            </button>
+            <span id="round-indicator" style="font-weight: 700; color: var(--yellow);">Round 1 / 5</span>
+            <span id="timer-display" style="font-family: 'Lilita One', sans-serif; color: var(--sea-blue); font-size: 18px;">60s</span>
+        </div>
+
+        <div id="party-board" style="--word-length: 5;">
+            <!-- Rendered by JS -->
+        </div>
+
+        <div id="party-keyboard">
+            <!-- Rendered by JS -->
+        </div>
+    </div>
+
+    <!-- Round Break Modal (5s Leaderboard) -->
+    <div id="breakModal" class="modal-overlay">
+        <div class="modal-card" style="width: min(500px, 100%);">
+            <h2 style="font-family: var(--font-logo); color: var(--yellow); margin-bottom: 8px; font-size: 22px;">Round Ended</h2>
+            <p style="font-size: 16px; margin-bottom: 12px; color: var(--cream);">
+                Word: <strong id="break-word" style="color: var(--green); text-transform: uppercase; font-family: 'Lilita One', sans-serif;">-</strong>
+            </p>
+            <div style="background: rgba(0,0,0,0.25); border-radius: 14px; padding: 12px; margin-bottom: 15px;">
+                <h4 style="margin: 0 0 8px; color: var(--sea-blue); font-size: 14px; text-transform: uppercase;">Rankings</h4>
+                <div id="break-leaderboard" style="display: flex; flex-direction: column; gap: 6px;"></div>
+            </div>
+            <p style="font-size: 13px; color: var(--text-muted);">Next round in: <strong id="break-timer" style="color: var(--yellow); font-size: 18px;">5s</strong></p>
+        </div>
+    </div>
+
+    <!-- Final Game Podium Modal (10s Celebration) -->
+    <div id="podiumModal" class="modal-overlay">
+        <div class="modal-card" style="width: min(550px, 100%);">
+            <h2 style="font-family: var(--font-logo); color: var(--sea-blue); font-size: 26px; margin-bottom: 4px;">FINAL WINNERS</h2>
+            <p style="color: var(--text-muted); margin-bottom: 16px; font-size: 14px;">Match Champions</p>
+
+            <div class="podium-container" id="podium-steps"></div>
+
+            <div style="background: rgba(0,0,0,0.25); border-radius: 14px; padding: 12px; margin-bottom: 15px;">
+                <div id="podium-full-rankings" style="display: flex; flex-direction: column; gap: 5px;"></div>
+            </div>
+
+            <p style="font-size: 13px; color: var(--text-muted);">Returning to lobby in: <strong id="podium-timer" style="color: var(--yellow); font-size: 18px;">10s</strong></p>
+        </div>
+    </div>
+
+    <!-- Settings Modal -->
+    <div id="settingsModal" class="modal-overlay">
+        <div class="modal-card">
+            <button class="close-btn" onclick="closeSettingsModal()">&times;</button>
+            <h2 style="font-family: var(--font-logo); color: var(--yellow); margin-bottom: 16px; font-size: 22px;">Party Settings</h2>
+
+            <form onsubmit="savePartySettings(event)" style="display: flex; flex-direction: column; gap: 16px; text-align: left;">
+                <div>
+                    <label style="font-weight: 700; display: block; margin-bottom: 6px; color: var(--cream); font-size: 14px;">Total Rounds (Min 4, Max 10):</label>
+                    <input type="number" id="setting-rounds" min="4" max="10" value="5" class="name-input" style="height: 44px; font-size: 16px;" required>
+                </div>
+
+                <div>
+                    <label style="font-weight: 700; display: block; margin-bottom: 6px; color: var(--cream); font-size: 14px;">
+                        Round Timer Limit: <span id="timer-val-display" style="color: var(--orange); font-weight: 800;">60</span>s
+                    </label>
+                    <div style="display: flex; align-items: center; gap: 12px;">
+                        <input type="range" id="setting-timer-slider" min="30" max="180" step="5" value="60" oninput="syncTimerInput('slider')" style="flex: 1; accent-color: var(--orange); cursor: pointer;">
+                        <input type="number" id="setting-timer-num" min="30" max="180" value="60" oninput="syncTimerInput('num')" class="name-input" style="width: 80px; height: 42px; font-size: 15px; padding: 0 8px;">
+                    </div>
+                </div>
+
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <input type="checkbox" id="setting-mute" style="width: 20px; height: 20px; cursor: pointer;">
+                    <label for="setting-mute" style="font-weight: 700; color: var(--cream); cursor: pointer; font-size: 14px;">Mute Party Chat</label>
+                </div>
+
+                <button type="submit" class="gradient-btn" style="width: 100%; height: 44px; font-size: 15px;">Save Settings</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- QR Code Modal -->
+    <div id="qrModal" class="modal-overlay">
+        <div class="modal-card" style="width: min(380px, 100%);">
+            <button class="close-btn" onclick="closeQRModal()">&times;</button>
+            <h3 style="font-family: var(--font-logo); color: var(--sea-blue); margin-bottom: 12px; font-size: 20px;">Party Invite QR</h3>
+            <div style="background: #fff; padding: 12px; border-radius: 14px; display: inline-block; margin-bottom: 12px;">
+                <img id="qr-img" src="" alt="Party QR Code" style="width: 180px; height: 180px; display: block;">
+            </div>
+            <p style="font-size: 13px; color: var(--text-muted); margin: 0;">Scan with phone camera to join party</p>
+        </div>
+    </div>
+
+    <!-- Custom In-App Forfeit Confirmation Modal -->
+    <div id="partyForfeitModal" class="modal-overlay">
+        <div class="modal-card" style="width: min(400px, 100%);">
+            <h2 style="font-family: var(--font-logo); color: var(--danger); margin-bottom: 10px; font-size: 22px;">Forfeit Match?</h2>
+            <p style="color: var(--cream); font-size: 14px; margin-bottom: 20px;">Are you sure you want to forfeit and leave the party?</p>
+            <div style="display: flex; gap: 12px; justify-content: center;">
+                <button onclick="confirmPartyForfeit()" class="gradient-btn danger-btn" style="min-width: 110px; height: 42px; font-size: 14px;">Yes</button>
+                <button onclick="closePartyForfeitModal()" class="gradient-btn" style="min-width: 110px; height: 42px; font-size: 14px; background: rgba(255,255,255,0.15); color: #fff;">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<script>
+    let currentPartyState = null;
+    let draftWord = "";
+    let lastRenderStateJSON = "";
+    let toastTimeout = null;
+
+    function showToast(msg, duration = 3000) {
+        const banner = document.getElementById('toast-banner');
+        banner.textContent = msg;
+        banner.classList.add('show');
+        if (toastTimeout) clearTimeout(toastTimeout);
+        toastTimeout = setTimeout(() => {
+            banner.classList.remove('show');
+        }, duration);
+    }
+
+    async function pollPartyStatus() {
+        try {
+            const res = await fetch('/api/party/status');
+            if (res.status === 401 || res.redirected) {
+                window.location.href = '/travel';
+                return;
+            }
+            const data = await res.json();
+            if (data.error) {
+                showToast(data.error);
+                window.location.href = '/travel';
+                return;
+            }
+            if (data.is_kicked) {
+                showToast("You have been kicked out of the party.");
+                window.location.href = '/travel';
+                return;
+            }
+            if (!data.is_member) {
+                showToast("Party has been disbanded.");
+                window.location.href = '/travel';
+                return;
+            }
+
+            currentPartyState = data;
+            
+            const stateStr = JSON.stringify(data);
+            if (stateStr !== lastRenderStateJSON) {
+                lastRenderStateJSON = stateStr;
+                renderPartyUI(data);
+            }
+        } catch (e) { console.error(e); }
+    }
+
+    function renderPartyUI(data) {
+        document.getElementById('party-code-display').textContent = data.code;
+        document.getElementById('rounds-display').textContent = `${data.total_rounds} Rounds (${data.round_timer_limit}s)`;
+        document.getElementById('player-count').textContent = data.players.length;
+
+        const playersDiv = document.getElementById('players-list');
+        playersDiv.innerHTML = data.players.map(p => `
+            <div class="player-row">
+                <div class="player-name">
+                    <span>${p}</span>
+                    ${p === data.host ? '<span class="host-badge">HOST</span>' : ''}
+                </div>
+                ${data.is_host && p !== data.host ? `<button onclick="kickPlayer('${p}')" class="kick-btn">Kick</button>` : ''}
+            </div>
+        `).join('');
+
+        document.getElementById('start-btn').style.display = data.is_host && data.status === 'lobby' ? 'inline-flex' : 'none';
+        document.getElementById('settings-btn').style.display = data.is_host && data.status === 'lobby' ? 'inline-flex' : 'none';
+        document.getElementById('disband-btn').style.display = data.is_host && data.status === 'lobby' ? 'inline-flex' : 'none';
+
+        const chatDiv = document.getElementById('chat-messages');
+        chatDiv.innerHTML = data.messages.map(m => `
+            <div class="chat-msg">
+                <span class="sender">${m.sender}:</span>
+                <span>${escapeHtml(m.text)}</span>
+                <span class="time">${m.timestamp}</span>
+            </div>
+        `).join('');
+        chatDiv.scrollTop = chatDiv.scrollHeight;
+
+        document.getElementById('mute-status').textContent = data.chat_muted ? '(Muted)' : '';
+
+        if (data.events && data.events.length > 0) {
+            const lastEvent = data.events[data.events.length - 1];
+            if (window.lastSeenEventId !== lastEvent.id) {
+                window.lastSeenEventId = lastEvent.id;
+                showToast(lastEvent.text);
+            }
+        }
+
+        if (data.status === 'playing') {
+            document.getElementById('lobby-view').style.display = 'none';
+            document.getElementById('game-view').style.display = 'block';
+            document.getElementById('breakModal').classList.remove('active');
+            document.getElementById('podiumModal').classList.remove('active');
+
+            document.getElementById('round-indicator').textContent = `Round ${data.current_round} / ${data.total_rounds}`;
+            document.getElementById('timer-display').textContent = `${data.time_left}s`;
+
+            renderPartyGrid(data);
+            renderPartyKeyboard(data);
+        } else if (data.status === 'break') {
+            document.getElementById('lobby-view').style.display = 'none';
+            document.getElementById('game-view').style.display = 'block';
+            document.getElementById('breakModal').classList.add('active');
+            document.getElementById('podiumModal').classList.remove('active');
+
+            document.getElementById('break-word').textContent = data.round_word || '***';
+            document.getElementById('break-timer').textContent = `${data.time_left}s`;
+
+            const breakLb = document.getElementById('break-leaderboard');
+            breakLb.innerHTML = data.rankings.map(r => `
+                <div style="display: flex; justify-content: space-between; align-items: center; padding: 6px 12px; background: rgba(255,255,255,0.05); border-radius: 8px; font-weight: 700; font-size: 13px;">
+                    <span style="display: flex; align-items: center; gap: 6px;">
+                        #${r.rank}
+                        ${r.rank === 1 ? '<svg width="15" height="15" viewBox="0 0 24 24" fill="#f6a927"><path d="M5 16L3 5l5.5 5L12 4l3.5 6L21 5l-2 11H5zm14 3c0 .6-.4 1-1 1H6c-.6 0-1-.4-1-1v-1h14v1z"/></svg>' : ''}
+                        ${r.username}
+                    </span>
+                    <span style="color: var(--yellow);">${r.score} pts</span>
+                </div>
+            `).join('');
+        } else if (data.status === 'podium') {
+            document.getElementById('lobby-view').style.display = 'none';
+            document.getElementById('game-view').style.display = 'none';
+            document.getElementById('breakModal').classList.remove('active');
+            document.getElementById('podiumModal').classList.add('active');
+
+            document.getElementById('podium-timer').textContent = `${data.time_left}s`;
+            renderPodium(data.rankings);
+        } else {
+            document.getElementById('lobby-view').style.display = 'block';
+            document.getElementById('game-view').style.display = 'none';
+            document.getElementById('breakModal').classList.remove('active');
+            document.getElementById('podiumModal').classList.remove('active');
+        }
+    }
+
+    function renderPodium(rankings) {
+        const top1 = rankings.filter(r => r.rank === 1);
+        const top2 = rankings.filter(r => r.rank === 2);
+        const top3 = rankings.filter(r => r.rank === 3);
+
+        const stepsDiv = document.getElementById('podium-steps');
+        stepsDiv.innerHTML = `
+            <div class="podium-step podium-2">
+                <span class="podium-rank">2nd</span>
+                <span class="podium-user">${top2.map(r => r.username).join(', ') || '-'}</span>
+            </div>
+            <div class="podium-step podium-1">
+                <span class="podium-rank">1st</span>
+                <span class="podium-user">${top1.map(r => r.username).join(', ') || '-'}</span>
+            </div>
+            <div class="podium-step podium-3">
+                <span class="podium-rank">3rd</span>
+                <span class="podium-user">${top3.map(r => r.username).join(', ') || '-'}</span>
+            </div>
+        `;
+
+        const fullRankingsDiv = document.getElementById('podium-full-rankings');
+        fullRankingsDiv.innerHTML = rankings.map(r => `
+            <div style="display: flex; justify-content: space-between; align-items: center; padding: 6px 12px; background: rgba(255,255,255,0.05); border-radius: 8px; font-weight: 700; font-size: 13px;">
+                <span style="display: flex; align-items: center; gap: 6px;">
+                    #${r.rank}
+                    ${r.rank === 1 ? '<svg width="15" height="15" viewBox="0 0 24 24" fill="#f6a927"><path d="M5 16L3 5l5.5 5L12 4l3.5 6L21 5l-2 11H5zm14 3c0 .6-.4 1-1 1H6c-.6 0-1-.4-1-1v-1h14v1z"/></svg>' : ''}
+                    ${r.username}
+                </span>
+                <span style="color: var(--sea-blue);">${r.score} pts</span>
+            </div>
+        `).join('');
+    }
+
+    function renderPartyGrid(data) {
+        const board = document.getElementById('party-board');
+        board.style.setProperty('--word-length', data.word_length);
+        const maxRows = 6;
+        let html = "";
+
+        const activeRowIndex = data.guesses.length;
+        for (let r = 0; r < maxRows; r++) {
+            if (r < data.scored_guesses.length) {
+                const [guessWord, scores] = data.scored_guesses[r];
+                html += `<div class="row">`;
+                for (let c = 0; c < data.word_length; c++) {
+                    const score = scores[c];
+                    html += `<span class="tile ${score}">${guessWord[c]}</span>`;
+                }
+                html += `</div>`;
+            } else if (r === activeRowIndex && data.player_status === 'playing') {
+                html += `<div class="row">`;
+                for (let c = 0; c < data.word_length; c++) {
+                    if (c < draftWord.length) {
+                        html += `<span class="tile draft">${draftWord[c]}</span>`;
+                    } else {
+                        html += `<span class="tile empty"></span>`;
+                    }
+                }
+                html += `</div>`;
+            } else {
+                html += `<div class="row">`;
+                for (let c = 0; c < data.word_length; c++) {
+                    html += `<span class="tile empty"></span>`;
+                }
+                html += `</div>`;
+            }
+        }
+        board.innerHTML = html;
+    }
+
+    function renderPartyKeyboard(data) {
+        const kb = document.getElementById('party-keyboard');
+        const rows = ['qwertyuiop', 'asdfghjkl', 'zxcvbnm'];
+        let html = '<div id="keyboard">';
+        
+        rows.forEach((rowStr, idx) => {
+            html += `<div class="kb-row">`;
+            if (idx === 2) {
+                html += `<button class="key enter" onclick="handlePartyKey('enter')">ENTER</button>`;
+            }
+            for (let char of rowStr) {
+                const color = data.kb_colors[char] || 'unused';
+                html += `<button class="key ${color}" onclick="handlePartyKey('${char}')">${char}</button>`;
+            }
+            if (idx === 2) {
+                html += `<button class="key delete" onclick="handlePartyKey('delete')">DEL</button>`;
+            }
+            html += `</div>`;
+        });
+        html += '</div>';
+        kb.innerHTML = html;
+    }
+
+    async function handlePartyKey(key) {
+        if (!currentPartyState || currentPartyState.player_status !== 'playing') return;
+        const wLen = currentPartyState.word_length;
+
+        if (key === 'enter') {
+            if (draftWord.length === wLen) {
+                const submitWord = draftWord;
+                draftWord = "";
+                const res = await fetch('/api/party/guess', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+                    body: `word=${encodeURIComponent(submitWord)}`
+                });
+                const resData = await res.json();
+                if (resData.message) {
+                    showToast(resData.message, 2000);
+                }
+                pollPartyStatus();
+            }
+        } else if (key === 'delete' || key === 'backspace') {
+            if (draftWord.length > 0) {
+                draftWord = draftWord.slice(0, -1);
+                renderPartyGrid(currentPartyState);
+            }
+        } else if (/^[a-z]$/.test(key)) {
+            if (draftWord.length < wLen) {
+                draftWord += key;
+                renderPartyGrid(currentPartyState);
+            }
+        }
+    }
+
+    document.addEventListener('keydown', (e) => {
+        if (e.ctrlKey || e.altKey || e.metaKey) return;
+        if (!currentPartyState || currentPartyState.status !== 'playing') return;
+        const key = e.key.toLowerCase();
+        if (key === 'enter') handlePartyKey('enter');
+        else if (key === 'backspace') handlePartyKey('backspace');
+        else if (/^[a-z]$/.test(key)) handlePartyKey(key);
+    });
+
+    async function sendChatMessage(e) {
+        e.preventDefault();
+        const input = document.getElementById('chat-input');
+        const text = input.value.trim();
+        if (!text) return;
+        input.value = "";
+        await fetch('/party/chat', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+            body: `text=${encodeURIComponent(text)}`
+        });
+        pollPartyStatus();
+    }
+
+    async function startPartyGame() {
+        await fetch('/party/start', {method: 'POST'});
+        pollPartyStatus();
+    }
+
+    async function kickPlayer(target) {
+        await fetch('/party/kick', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+            body: `target=${encodeURIComponent(target)}`
+        });
+        pollPartyStatus();
+    }
+
+    async function leaveParty(e) {
+        if (e) e.preventDefault();
+        await fetch('/party/leave', {method: 'POST'});
+        window.location.href = '/travel';
+    }
+
+    function openPartyForfeitModal() {
+        document.getElementById('partyForfeitModal').classList.add('active');
+    }
+
+    function closePartyForfeitModal() {
+        document.getElementById('partyForfeitModal').classList.remove('active');
+    }
+
+    async function confirmPartyForfeit() {
+        closePartyForfeitModal();
+        await fetch('/party/forfeit', {method: 'POST'});
+        window.location.href = '/travel';
+    }
+
+    async function disbandParty() {
+        await fetch('/party/disband', {method: 'POST'});
+        window.location.href = '/travel';
+    }
+
+    function openQRModal() {
+        if (currentPartyState) {
+            const joinUrl = `${window.location.origin}/party/join?code=${currentPartyState.code}`;
+            const qrUrl = `https://quickchart.io/qr?text=${encodeURIComponent(joinUrl)}&size=200`;
+            document.getElementById('qr-img').src = qrUrl;
+        }
+        document.getElementById('qrModal').classList.add('active');
+    }
+
+    function closeQRModal() {
+        document.getElementById('qrModal').classList.remove('active');
+    }
+
+    function openSettingsModal() {
+        if (currentPartyState) {
+            document.getElementById('setting-rounds').value = currentPartyState.total_rounds;
+            document.getElementById('setting-timer-slider').value = currentPartyState.round_timer_limit;
+            document.getElementById('setting-timer-num').value = currentPartyState.round_timer_limit;
+            document.getElementById('timer-val-display').textContent = currentPartyState.round_timer_limit;
+            document.getElementById('setting-mute').checked = currentPartyState.chat_muted;
+        }
+        document.getElementById('settingsModal').classList.add('active');
+    }
+
+    function closeSettingsModal() {
+        document.getElementById('settingsModal').classList.remove('active');
+    }
+
+    function syncTimerInput(source) {
+        const slider = document.getElementById('setting-timer-slider');
+        const num = document.getElementById('setting-timer-num');
+        const display = document.getElementById('timer-val-display');
+
+        if (source === 'slider') {
+            num.value = slider.value;
+            display.textContent = slider.value;
+        } else if (source === 'num') {
+            slider.value = num.value;
+            display.textContent = num.value;
+        }
+    }
+
+    async function savePartySettings(e) {
+        e.preventDefault();
+        const rounds = document.getElementById('setting-rounds').value;
+        const timerLimit = document.getElementById('setting-timer-num').value;
+        const muted = document.getElementById('setting-mute').checked ? '1' : '0';
+        await fetch('/party/settings', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+            body: `total_rounds=${rounds}&round_timer_limit=${timerLimit}&chat_muted=${muted}`
+        });
+        closeSettingsModal();
+        pollPartyStatus();
+    }
+
+    function escapeHtml(str) {
+        return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+    }
+
+    pollPartyStatus();
+    setInterval(pollPartyStatus, 1500);
+</script>
+{% endblock %}

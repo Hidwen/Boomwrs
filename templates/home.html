@@ -1,0 +1,246 @@
+{% extends "base.html" %}
+{% block extra_head %}
+<link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Titan+One&display=swap" rel="stylesheet">
+  
+{% endblock %}
+{% block body_class %}home-body{% endblock %}
+{% block content %}
+
+
+  <!-- Shared spark shape (used by both bombs) -->
+  <svg class="sprite" width="0" height="0" aria-hidden="true" focusable="false">
+    <defs>
+      <radialGradient id="sparkGlow" cx="50%" cy="50%" r="50%">
+        <stop offset="0%" stop-color="#fff6c2"/>
+        <stop offset="45%" stop-color="#ffc233"/>
+        <stop offset="100%" stop-color="#ff7a1a"/>
+      </radialGradient>
+    </defs>
+    <symbol id="spark" viewBox="-50 -50 100 100">
+      <polygon fill="#ff8a1f" points="50,0 16.6,6.9 35.4,35.4 6.9,16.6 0,50 -6.9,16.6 -35.4,35.4 -16.6,6.9 -50,0 -16.6,-6.9 -35.4,-35.4 -6.9,-16.6 0,-50 6.9,-16.6 35.4,-35.4 16.6,-6.9"/>
+      <polygon fill="url(#sparkGlow)" transform="scale(.66) rotate(22.5)" points="50,0 16.6,6.9 35.4,35.4 6.9,16.6 0,50 -6.9,16.6 -35.4,35.4 -16.6,6.9 -50,0 -16.6,-6.9 -35.4,-35.4 -6.9,-16.6 0,-50 6.9,-16.6 35.4,-35.4 16.6,-6.9"/>
+      <circle r="9" fill="#fffbe6"/>
+    </symbol>
+  </svg>
+
+  <div class="page">
+
+    <!-- Background decoration -->
+    <div class="backdrop" aria-hidden="true">
+      <div class="glow glow-left"></div>
+      <div class="glow glow-right"></div>
+
+      <span class="float-tile ft-b">B</span>
+      <span class="float-tile ft-m">M</span>
+      <span class="float-tile ft-o">O</span>
+      <span class="float-tile ft-s">S</span>
+      <span class="float-tile ft-r">R</span>
+
+      <i class="streak s1"></i>
+      <i class="streak s2"></i>
+      <i class="streak s3"></i>
+      <i class="streak s4"></i>
+      <i class="streak s5"></i>
+
+      <div class="smoke">
+        <span class="cloud c1"></span>
+        <span class="cloud c2"></span>
+        <span class="cloud c3"></span>
+        <span class="cloud c4"></span>
+        <span class="cloud c5"></span>
+        <span class="cloud c6"></span>
+        <span class="cloud c7"></span>
+      </div>
+
+      <!-- Big bomb, bottom left -->
+      <svg class="big-bomb" viewBox="0 0 440 440" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <radialGradient id="bombBody" cx="62%" cy="30%" r="80%">
+            <stop offset="0%" stop-color="#232537"/>
+            <stop offset="55%" stop-color="#151622"/>
+            <stop offset="100%" stop-color="#0b0c13"/>
+          </radialGradient>
+          <linearGradient id="rim" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stop-color="#ffb347"/>
+            <stop offset="60%" stop-color="#ff7a1a"/>
+            <stop offset="100%" stop-color="#ff7a1a" stop-opacity="0"/>
+          </linearGradient>
+        </defs>
+        <!-- fuse -->
+        <path d="M188 96 C 205 60, 215 55, 250 42" fill="none" stroke="#e0a56d" stroke-width="13" stroke-linecap="round"/>
+        <path d="M188 96 C 205 60, 215 55, 250 42" fill="none" stroke="#f3cf9c" stroke-width="4" stroke-linecap="round" stroke-dasharray="2 12" opacity=".8"/>
+        <!-- body -->
+        <circle cx="150" cy="322" r="205" fill="url(#rim)"/>
+        <circle cx="147" cy="325" r="200" fill="url(#bombBody)"/>
+        <!-- cap -->
+        <g transform="rotate(-14 150 118)">
+          <rect x="92" y="80" width="118" height="52" rx="12" fill="#f2b04e"/>
+          <rect x="92" y="88" width="118" height="44" rx="12" fill="#15161f"/>
+          <rect x="112" y="96" width="78" height="10" rx="5" fill="#252738"/>
+        </g>
+        <!-- highlights -->
+        <ellipse cx="260" cy="230" rx="24" ry="38" transform="rotate(38 260 230)" fill="#77749a" opacity=".85"/>
+        <ellipse cx="292" cy="300" rx="9" ry="20" transform="rotate(20 292 300)" fill="#77749a" opacity=".8"/>
+        <!-- spark -->
+        <use href="#spark" x="204" y="-16" width="120" height="120" class="flicker"/>
+      </svg>
+    </div>
+
+    <main class="stage">
+
+      <!-- Logo -->
+      <div class="logo-wrap">
+        <svg class="rays rays-left" viewBox="0 0 80 100" aria-hidden="true">
+          <line x1="46" y1="8"  x2="72" y2="30" />
+          <line x1="4"  y1="52" x2="42" y2="50" />
+          <line x1="44" y1="92" x2="68" y2="72" />
+        </svg>
+
+        <h1 class="logo" aria-label="Boomwrs">
+          <span class="logo-letters" aria-hidden="true">B</span>
+          <svg class="logo-bomb" viewBox="0 0 100 100" aria-hidden="true">
+            <defs><radialGradient id="miniBody" cx="35%" cy="30%" r="85%"><stop offset="0%" stop-color="#1f2030"/><stop offset="100%" stop-color="#040408"/></radialGradient></defs>
+            <path d="M62 16 C 68 2, 74 -2, 86 -8" fill="none" stroke="#3a2418" stroke-width="12" stroke-linecap="round"/>
+            <path d="M62 16 C 68 2, 74 -2, 86 -8" fill="none" stroke="#f0b877" stroke-width="7" stroke-linecap="round"/>
+            <circle cx="50" cy="56" r="44" fill="#fff7e8"/>
+            <circle cx="50" cy="56" r="39" fill="url(#miniBody)"/>
+            <circle cx="50" cy="56" r="44" fill="none" stroke="#ff9a2e" stroke-width="3" stroke-dasharray="70 300" stroke-dashoffset="-190" stroke-linecap="round"/>
+            <rect x="38" y="8" width="30" height="16" rx="5" transform="rotate(18 53 16)" fill="#101119" stroke="#f0b877" stroke-width="3"/>
+            <ellipse cx="34" cy="42" rx="5" ry="9" transform="rotate(30 34 42)" fill="#4b4a66"/>
+            <use href="#spark" x="70" y="-40" width="42" height="42" class="flicker"/>
+          </svg>
+          <span class="logo-letters" aria-hidden="true">omwrs</span>
+        </h1>
+
+        <svg class="rays rays-right" viewBox="0 0 80 100" aria-hidden="true">
+          <line x1="34" y1="8"  x2="8"  y2="30" />
+          <line x1="76" y1="52" x2="38" y2="50" />
+          <line x1="36" y1="92" x2="12" y2="72" />
+        </svg>
+      </div>
+
+      <!-- Decorative word board -->
+      <div class="board" aria-hidden="true">
+        <span class="slot"><span class="tile green">B</span></span>
+        <span class="slot"><span class="tile yellow">O</span></span>
+        <span class="slot"><span class="tile yellow">O</span></span>
+        <span class="slot"><span class="tile dark">M</span></span>
+        <span class="slot"><span class="tile dark">W</span></span>
+        <span class="slot"><span class="tile yellow">R</span></span>
+        <span class="slot"><span class="tile green">S</span></span>
+      </div>
+
+      <p class="tagline"><span>Pick a name and start guessing</span></p>
+
+      
+      {% if join_code %}
+        <p style="color: var(--yellow); font-weight: 700; margin-bottom: 12px; font-size: 16px;">Joining Party {{ join_code }} — Enter your name to play!</p>
+      {% endif %}
+
+      {% if error %}
+        <p class="error" style="color: var(--danger); font-weight: 500; margin-bottom: 10px;">{{ error }}</p>
+      {% endif %}
+
+      {% if username %}
+        <div class="join">
+          <p style="font-size: 20px; margin-bottom: 15px; color: #fff;">Hi, {{ username }}!</p>
+          <form action="/travel" method="GET" style="width: 100%;">
+            <button type="submit" class="play-btn" style="width: 100%;">
+              <span>Play</span>
+              <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M4 12h15M13 6l6 6-6 6"/>
+              </svg>
+            </button>
+          </form>
+          <form action="/logout" method="GET" style="width: 100%; margin-top: 15px;">
+            <button type="submit" class="play-btn" style="width: 100%; background: linear-gradient(180deg, #ff6b5e 0%, #d64538 100%); box-shadow: 0 10px 30px rgba(255,107,94,.38), inset 0 2px 0 rgba(255,255,255,.45), inset 0 -3px 0 rgba(180,0,0,.25);">
+              <span>Logout</span>
+            </button>
+          </form>
+        </div>
+      {% else %}
+        <form class="join" id="joinForm" action="/" method="POST">
+          {% if join_code %}
+            <input type="hidden" name="code" value="{{ join_code }}">
+          {% endif %}
+          <label class="sr-only" for="username">Username</label>
+          <input
+            id="username"
+            name="username"
+            class="name-input"
+            type="text"
+            placeholder="Enter your name"
+            minlength="3"
+            maxlength="12"
+            autocomplete="off"
+            autocapitalize="off"
+            spellcheck="false"
+            required
+            aria-describedby="nameHint nameError">
+          <p class="hint" id="nameHint">3–12 letters and numbers. No spaces or symbols.</p>
+          <p class="error" id="nameError" role="alert" aria-live="polite"></p>
+
+          <button type="submit" class="play-btn">
+            <span>Play</span>
+            <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M4 12h15M13 6l6 6-6 6"/>
+            </svg>
+          </button>
+        </form>
+      {% endif %}
+
+
+    </main>
+  </div>
+
+  {% if not username %}
+  <script>
+    (function () {
+      var form  = document.getElementById('joinForm');
+      var input = document.getElementById('username');
+      var error = document.getElementById('nameError');
+      var VALID = /^[A-Za-z0-9]{3,12}$/;         // letters and numbers only, 3 to 12
+
+      if (!form || !input || !error) return;
+
+      function getProblem(value) {
+        if (value.length === 0)      return 'Enter a name to play.';
+        if (!/^[A-Za-z0-9]+$/.test(value)) return 'Use letters and numbers only. No spaces or symbols.';
+        if (value.length < 3)        return 'Your name needs at least 3 letters/numbers.';
+        if (value.length > 12)       return 'Your name can be 12 letters/numbers at most.';
+        return '';
+      }
+
+      function showError(msg) {
+        error.textContent = msg;
+        input.classList.add('invalid');
+        input.setAttribute('aria-invalid', 'true');
+        input.classList.remove('shake');
+        void input.offsetWidth;               // restart animation
+        input.classList.add('shake');
+        input.focus();
+      }
+
+      function clearError() {
+        error.textContent = '';
+        input.classList.remove('invalid', 'shake');
+        input.removeAttribute('aria-invalid');
+      }
+
+      input.addEventListener('input', clearError);
+
+      form.addEventListener('submit', function (e) {
+        var name = input.value;
+        var problem = getProblem(name);
+        if (problem || !VALID.test(name)) {
+          e.preventDefault();
+          showError(problem || 'Enter a valid name.');
+        }
+      });
+    })();
+  </script>
+  {% endif %}
+
+{% endblock %}
